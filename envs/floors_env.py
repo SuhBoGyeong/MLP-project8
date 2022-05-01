@@ -1,14 +1,16 @@
 import random
 import sys
-import copy
+import copy, os, json, time
 
 import numpy as np
 from gym import Env, spaces
 
 from utils.arg_parser import common_arg_parser
+from utils.callbacks import getBestRewardCallback, logDir
 
 from envs.components.map import Map
 from envs.components.pallet import Pallet
+
 
 class FloorEnv(Env):
     def __init__(self, args=None, dim=2, title="RL"):
@@ -21,6 +23,10 @@ class FloorEnv(Env):
         self.resetBuffer()
 
         self.action_space = spaces.Discrete(5)
+
+        ##################################################
+        self.cursor_thread = 0
+        ##################################################
 
         if self.dim == 2:
             if self.args.window_size > 1:
@@ -101,7 +107,7 @@ class FloorEnv(Env):
                 buffers = self.buffers
             self.map.render(buffers=buffers, save=save, show=show, movie_name=movie_name)
 
-    def step(self, action):
+    def step(self, action, cursor_thread):
         '''
         이미 Route가 Assign된 애들은 simulate하고, 액션이 필요한 애만 지정해야함.
         따라서 Return하는 State는 다음에 Action이 필요한 pallet가 바라본 현 상태여야함.
@@ -112,6 +118,7 @@ class FloorEnv(Env):
         Window를 지정했을 때 메모리에 저장할 데이터는 action이 필요했던 순간들을 저장해야할까
         아니면 매 시뮬레이션 스텝마다 저장해서 봐야할까 아마 이거인듯.. 근데 위에껄로 되어있음 고치자
         '''
+        # print("IN STEP:", cursor_thread, id(self))
         a = self.pallets[self.cursor]
 
         if action == 5:
@@ -160,6 +167,8 @@ class FloorEnv(Env):
                         break
                         
                     if len(a.actions) > 0:
+
+                        #print(a.actions[0])
                         
                         a.move(a.actions[0]) 
 
@@ -181,6 +190,16 @@ class FloorEnv(Env):
 
         if self.done_count == self.pallet_counts:
             self.done = True
+
+        log_dir = logDir()+self.args.prefix+"/log"
+        os.makedirs(log_dir, exist_ok=True)
+        csv_path = (log_dir+'/log.model{}.csv').format(cursor_thread)
+        if not os.path.exists(csv_path):
+            with open(csv_path, 'wt') as file_handler:
+                file_handler.write('#%s\n' % json.dumps({'args':vars(self.args)}))
+
+        with open(csv_path, 'a') as file_handler:
+            file_handler.write(str(reward)+","+str(time.time())+"\n")
 
         return obs, reward, self.done, {"buffers": self.buffers}
 

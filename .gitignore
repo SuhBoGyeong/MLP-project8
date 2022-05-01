@@ -163,3 +163,8 @@ cython_debug/
 .DS_Store
 .vscode
 .AppleDouble
+*.mp4
+*.zip
+tmp/*.pkl
+tmp/*.csv
+tmp/*

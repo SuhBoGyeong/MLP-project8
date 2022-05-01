@@ -75,7 +75,8 @@ class Pallet:
         s_before = self.map.map_value(self.state)
         s_after  = self.map.map_value(next_state)
 
-        if s_before == "LINE" and s_after == "TESTERS":
+
+        if s_before == "PATH" and s_after == "TESTERS":
             # 검사기에 진입
             self.test_count += 1
             self.test_time = 0
@@ -83,7 +84,7 @@ class Pallet:
             self.test_target_time = np.random.normal(loc=self.map.tester_mean, scale=self.map.tester_std, size=1).astype(int)[0]  # Normal Distribution
 
 
-        if s_before == "TESTERS" and s_after == "LINE":
+        if s_before == "TESTERS" and s_after == "PATH":
             # 검사기에서 탈출
             self.test_time += 1
             if self.test_target_time > self.test_time:
@@ -101,6 +102,7 @@ class Pallet:
         return self.state
 
     def setTarget(self, tester_type, floor):
+        
         # 해당 층에 몇개의 테스터기가 점유되어 있는가
         counts = self.map.tester_status(tester_type)[floor]
 
@@ -127,9 +129,12 @@ class Pallet:
         # 검사기 진입 후 탈출
         actions += ["u"]
         actions += ["d"]
+        #self.test_count+=1
 
         # Lift로 이동
         actions += ["r"] * (1 + t_idx)
+
+
 
         if tester_type == "b":
             # 종료로
@@ -189,7 +194,7 @@ class Pallet:
 
     def location(self):
         s = self.map.map_value(self.state)
-        if s == "LINE" or s == "TESTERS":
+        if s == "PATH" or s == "TESTERS":
             p = self.state
             x = p[1]
             y = p[0]

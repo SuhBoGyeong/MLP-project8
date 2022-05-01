@@ -12,12 +12,24 @@ class Map:
     0 : Invalid
     '''
     def __init__(self):
-        INVD, self.invalid_flag = 0
-        STRT, self.start_flag   = 1
-        LIFT, self.lift_flag    = 2
-        TEST, self.tester_flag  = 3
-        PATH, self.path_flag    = 4
-        EXIT, self.exit_flag    = 5
+        # INVD, self.invalid_flag = 0, 0
+        # STRT, self.start_flag   = 1, 1
+        # LIFT, self.lift_flag    = 2, 2
+        # TEST, self.tester_flag  = 3, 3
+        # PATH, self.path_flag    = 4, 4
+        # EXIT, self.exit_flag    = 5, 5
+        INVD = 0
+        self.invalid_flag = INVD
+        STRT = 1
+        self.start_flag = STRT
+        LIFT = 2
+        self.lift_flag = 2
+        TEST = 3
+        self.tester_flag = 3
+        PATH = 4
+        self.path_flag = 4
+        EXIT = 5
+        self.exit_flag = 5
         
         self.map = [
             [INVD, INVD, TEST, TEST, TEST, TEST, TEST, INVD, INVD, TEST, TEST, TEST, TEST, TEST, INVD, INVD, INVD],
@@ -72,6 +84,7 @@ class Map:
         self.tester_std = 10
 
     def map_value(self, state):
+        #print(state)
         if state is None:
             return "OUT"
         m = self.map[state[0]][state[1]]

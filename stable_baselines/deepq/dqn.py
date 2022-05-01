@@ -13,6 +13,8 @@ from stable_baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplay
 from stable_baselines.deepq.policies import DQNPolicy
 from stable_baselines.a2c.utils import total_episode_reward_logger
 
+import time
+import csv
 
 class DQN(OffPolicyRLModel):
     """
@@ -61,7 +63,7 @@ class DQN(OffPolicyRLModel):
                  prioritized_replay_alpha=0.6, prioritized_replay_beta0=0.4, prioritized_replay_beta_iters=None,
                  prioritized_replay_eps=1e-6, param_noise=False,
                  n_cpu_tf_sess=None, verbose=0, tensorboard_log=None,
-                 _init_setup_model=True, policy_kwargs=None, full_tensorboard_log=False, seed=None):
+                 _init_setup_model=True, policy_kwargs=None, full_tensorboard_log=False, seed=None, model_id=None):
 
         # TODO: replay_buffer refactoring
         super(DQN, self).__init__(policy=policy, env=env, replay_buffer=None, verbose=verbose, policy_base=DQNPolicy,
@@ -100,9 +102,12 @@ class DQN(OffPolicyRLModel):
         self.params = None
         self.summary = None
         self.episode_reward = None
+        self.model_id = model_id
 
         if _init_setup_model:
             self.setup_model()
+
+    
 
     def _get_pretrain_placeholders(self):
         policy = self.step_model
@@ -151,8 +156,9 @@ class DQN(OffPolicyRLModel):
 
                 self.summary = tf.summary.merge_all()
 
-    def learn(self, total_timesteps, callback=None, log_interval=100, tb_log_name="DQN",
+    def learn(self, total_timesteps, model_id, callback=None, log_interval=100, tb_log_name="DQN",
               reset_num_timesteps=True, replay_wrapper=None):
+
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
 
@@ -217,7 +223,16 @@ class DQN(OffPolicyRLModel):
                     action = self.act(np.array(obs)[None], update_eps=update_eps, **kwargs)[0]
                 env_action = action
                 reset = False
-                new_obs, rew, done, info = self.env.step(env_action)
+
+                while True:
+                    if self.env.cursor_thread == model_id:
+                        new_obs, rew, done, info = self.env.step(env_action, self.env.cursor_thread)
+                        self.env.cursor_thread = (self.env.cursor_thread + 1) % 2
+                        break
+                    else:
+                        # print(model_id, "waiting")
+                        time.sleep(0.01)
+
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, action, rew, new_obs, float(done))
                 obs = new_obs
@@ -301,8 +316,22 @@ class DQN(OffPolicyRLModel):
                     logger.dump_tabular()
 
                 self.num_timesteps += 1
+                ######################
+                #print('timesteps: ', self.num_timesteps)
+                if model_id == 0:
+                    f = open('/home/suh/Desktop/MLP/Assigning-Problem-master1/timesteps1.txt', 'w')
+                    f.write(str(self.num_timesteps))
+                    f.close()
+                else:
+                    f = open('/home/suh/Desktop/MLP/Assigning-Problem-master1/timesteps2.txt', 'w')
+                    f.write(str(self.num_timesteps))
+                    f.close()
+                ######################
+                
+
 
         return self
+    
 
     def predict(self, observation, state=None, mask=None, deterministic=True):
         observation = np.array(observation)

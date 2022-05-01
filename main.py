@@ -16,8 +16,13 @@ from envs.floors_env import FloorEnv
 from utils.callbacks import getBestRewardCallback, logDir
 from utils.arg_parser import common_arg_parser, parseLayersFromArgs
 
+from envs.components.pallet import Pallet
+
 import os
 import tensorflow as tf
+
+import time
+import threading
 
 def make_env(args, rank, seed=0):
     """
@@ -40,14 +45,25 @@ def make_env(args, rank, seed=0):
     set_global_seeds(seed)
     return _init
 
+def env_t(model_id, num_timesteps, bestRewardCallback, model):
+    print(model_id)
+
+    model.learn(total_timesteps=num_timesteps, model_id=model_id, log_interval=100, callback=bestRewardCallback)
+
+
 def main(args):
     arg_parser = common_arg_parser()
     args, unknown_args = arg_parser.parse_known_args(args)
     env = FloorEnv(args=args)
+    ########################
+    cursor = env.cursor
+    ########################
+
+    #model2 = env.autopilot(flag='min', return_floor=True)
 
     # env = SubprocVecEnv([make_env(args, i) for i in range(4)])
     
-    env = Monitor(env, logDir()+args.prefix+"/log", allow_early_resets=True)
+    # env = Monitor(env, logDir()+args.prefix+"/log", allow_early_resets=True)
 
     layers = parseLayersFromArgs(args=args) # default [32, 32]
 
@@ -67,16 +83,34 @@ def main(args):
     # Using only one expert trajectory
     # you can specify `traj_limitation=-1` for using the whole dataset
     # Pretrain the PPO2 model
-    if env.dim == 2:
-        model = DQN(MlpPolicy, env, verbose=1)
-    elif env.dim == 1:
-        model = DQN(MlpPolicy, env, verbose=1)
 
-    dataset = ExpertDataset(expert_path='expert_fcfs_w4_2dim.npz',
-                            traj_limitation=1, batch_size=1024)
-    model.pretrain(dataset, n_epochs=10000)
-   
-    model.learn(total_timesteps=args.num_timesteps, log_interval=100, callback=bestRewardCallback)
+    
+    if env.dim == 2:
+        model1 = DQN(MlpPolicy, env, verbose=1, model_id=0)
+        #model2 = env.current_pallet().autopilot(flag='min', return_floor=True)
+        model2 = DQN(MlpPolicy, env, verbose=1, model_id=1)
+        #model2_actions = autopilot(flag="min", floor=None, return_floor=False)
+        
+    elif env.dim == 1:
+        model1 = DQN(MlpPolicy, env, verbose=1, model_id=0)
+        model2 = DQN(MlpPolicy, env, verbose=1, model_id=1)
+        #model2 = env.current_pallet().autopilot(flag='min', return_floor=True)
+        
+        #model2_actions = autopilot(flag="min", floor=None, return_floor=False)
+
+    # dataset = ExpertDataset(expert_path='expert_fcfs_w4_2dim.npz',
+    #                         traj_limitation=1, batch_size=1024)
+
+    #model1.learn(total_timesteps=int(args.num_timesteps), log_interval=100, callback=bestRewardCallback)
+
+
+    t1 = threading.Thread(target=env_t, args=(0, int(args.num_timesteps), bestRewardCallback, model1))
+    t2 = threading.Thread(target=env_t, args=(1, int(args.num_timesteps), bestRewardCallback, model2))
+
+    t1.start()
+    t2.start()
+
+
     # model.learn(total_timesteps=2000*1000000, log_interval=100)
 
 if __name__ == '__main__':
