@@ -54,12 +54,19 @@ class FloorEnv(Env):
 
         if self.dim == 2:
             result, _, _ = self.empty_obs("a")
-            self.memory = [result] * self.args.window_size
+            self.memoryA = [result] * self.args.window_size
+
+            result, _, _ = self.empty_obs("b")
+            self.memoryB = [result] * self.args.window_size
+
         elif self.dim == 1:
             result, _, _ = self.empty_obs("a")
             r = self.flatten_obs(result)
+            self.memoryA = [copy.deepcopy(r)] * self.args.window_size
 
-            self.memory = [copy.deepcopy(r)] * self.args.window_size
+            result, _, _ = self.empty_obs("b")
+            r = self.flatten_obs(result)
+            self.memoryB = [copy.deepcopy(r)] * self.args.window_size
 
         self.resetBuffer()
         
@@ -269,8 +276,12 @@ class FloorEnv(Env):
             r = result
         
         if self.args.window_size > 0:
-            del self.memory[-1]
-            self.memory.insert(0, r)
+            if tester_type == 'a':
+                del self.memoryA[-1]
+                self.memoryA.insert(0, r)
+            else:
+                del self.memoryB[-1]
+                self.memoryB.insert(0, r)
 
             # TODO dim=2인 경우에 flatten을 할 경우 차원 사라짐
             return np.array(self.memory).flatten()
