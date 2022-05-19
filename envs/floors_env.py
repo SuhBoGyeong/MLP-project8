@@ -14,6 +14,12 @@ from envs.components.pallet import Pallet
 
 class FloorEnv(Env):
     def __init__(self, args=None, dim=2, title="RL"):
+
+        self.debug_obs = []
+        self.steps = []
+
+
+
         self.pallet_counts = args.pallet_counts
         self.title = title
         self.dim = dim
@@ -146,6 +152,10 @@ class FloorEnv(Env):
                 # Assign된 검사기의 수 리턴
                 reward = np.count_nonzero(self.obs(tester_type=a.tester_type()) == 2) / 25
 
+        ################# 0519
+        ## debuging을 위해 action을 취한 직후의 memory를 그대로 빼와봤다
+        self.debug_obs = self.spit_memoery().copy()
+
         if self.cursor == self.pallet_counts -1:
             # 한바퀴를 다 수행하였을 때만 현화면 저장
             self.saveBuffer(self.title)
@@ -171,11 +181,15 @@ class FloorEnv(Env):
                         # print("#####")
                         # print("ID", a.id, a.state, a.target)
                         # print("BREAK")
+                        ###### 0519
+                        self.steps = []
                         break
                         
                     if len(a.actions) > 0:
 
                         #print(a.actions[0])
+                        ###### 0519
+                        self.steps.append(self.check_plane())
                         
                         a.move(a.actions[0]) 
 
@@ -185,6 +199,8 @@ class FloorEnv(Env):
                 
                 if self.done_count == self.pallet_counts:
                     print("ALL DONE, SIMTIME:", self.sim_time)
+                    ###### 0519
+                    self.steps = []
                     break
 
             self.cursor += 1
@@ -279,14 +295,60 @@ class FloorEnv(Env):
             if tester_type == 'a':
                 del self.memoryA[-1]
                 self.memoryA.insert(0, r)
+                return np.array(self.memoryA).flatten()
+
             else:
                 del self.memoryB[-1]
                 self.memoryB.insert(0, r)
+                return np.array(self.memoryB).flatten()
 
             # TODO dim=2인 경우에 flatten을 할 경우 차원 사라짐
             return np.array(self.memory).flatten()
         else:
             return r
+
+    def spit_memoery(self, reverse=False):
+        mem = np.array(self.memoryA)
+        if reverse:
+            for i in range(len(mem)):
+                mem[i] = mem[i][::-1]
+        return mem
+
+    def spit_debug_obs(self):
+        do = self.debug_obs.copy()
+        for i in range(len(do)):
+            do[i] = do[i][::-1]
+        return do
+    
+    def check_plane(self, tester_type):
+        result, ys, xs = self.empty_obs(tester_type)
+
+        # Pallet 분포
+        for pallet_idx in self.pallets:
+            a = self.pallets[pallet_idx]
+            if a.target is not None:
+                if a.target[0] == tester_type:
+                    i = 3 * a.target[1] + 1 # floor
+                    j = a.target[2] + 1
+
+                    result[i][j] = 2 # Occupied / Reserved
+            if a.state is not None:
+                if a.state[0] in ys and a.state[1] in xs:
+                    i = ys.index(a.state[0])
+                    j = xs.index(a.state[1])
+
+                    if result[i][j] != 2:
+                        result[i][j] = 1 # Pallet Located
+                    if a.test_time > 0:
+                        # 테스트중일 경우...
+                        result[i][j] = 2 + a.test_time / self.map.tester_mean
+        result = np.array(result)
+        for i in range(len(result)):
+            result[i] = result[i][::-1]
+        return result
+    
+    def spit_steps(self):
+        return self.steps
 
 
 if __name__ == "__main__":
