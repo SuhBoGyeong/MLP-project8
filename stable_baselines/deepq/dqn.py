@@ -159,7 +159,6 @@ class DQN(OffPolicyRLModel):
     def learn(self, total_timesteps, model_id, callback=None, log_interval=100, tb_log_name="DQN",
               reset_num_timesteps=True, replay_wrapper=None):
 
-
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
 
         with SetVerbosity(self.verbose), TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) \
@@ -196,7 +195,9 @@ class DQN(OffPolicyRLModel):
             reset = True
             self.episode_reward = np.zeros((1,))
 
-            for _ in range(total_timesteps):
+
+            for iii in range(total_timesteps):
+                print('current time steps: ', iii)
                 if callback is not None:
                     # Only stop training if return value is False, not when it is None. This is for backwards
                     # compatibility with callbacks that have no return statement.
@@ -223,19 +224,51 @@ class DQN(OffPolicyRLModel):
                     action = self.act(np.array(obs)[None], update_eps=update_eps, **kwargs)[0]
                 env_action = action
                 reset = False
-
+                #######################################################################
                 while True:
                     if self.env.cursor_thread == model_id:
                         new_obs, rew, done, info = self.env.step(env_action, self.env.cursor_thread)
+                        print('obs shape: ', new_obs.shape)
+
+
+
+
+                        new_obs_forsave = np.array(new_obs)
+                
+                        if iii == 0:
+                            if model_id == 0:
+                                total_obs1 = new_obs_forsave
+                                total_obs1 = np.reshape(total_obs1, (1,len(total_obs1)))
+                            else:
+                                total_obs2 = new_obs_forsave
+                                total_obs2 = np.reshape(total_obs2, (1,len(total_obs2))) 
+                        else:
+                            new_obs_forsave = np.reshape(new_obs_forsave, (1, len(new_obs_forsave)))
+                            if model_id == 0:
+                                total_obs1 = np.concatenate((total_obs1, new_obs_forsave), axis=0)
+                            else:
+                                total_obs2 = np.concatenate((total_obs2, new_obs_forsave), axis=0)
+                        
+                        if model_id == 0:
+                            print(total_obs1.shape)
+                        else:
+                            print(total_obs2.shape)
+                        
+
+
                         self.env.cursor_thread = (self.env.cursor_thread + 1) % 2
                         break
                     else:
                         # print(model_id, "waiting")
                         time.sleep(0.01)
-
+                ########################################################################
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, action, rew, new_obs, float(done))
+
+
                 obs = new_obs
+                #print('------------------OBSERVATION---------------')
+                
 
                 if writer is not None:
                     ep_rew = np.array([rew]).reshape((1, -1))
@@ -327,6 +360,15 @@ class DQN(OffPolicyRLModel):
                     f.write(str(self.num_timesteps))
                     f.close()
                 ######################
+
+                if model_id == 0:
+                    np.save('./observation1.npy', total_obs1)
+                else:
+                    np.save('./observation2.npy', total_obs2)
+
+            
+
+
                 
 
 
