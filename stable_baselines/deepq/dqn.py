@@ -352,20 +352,32 @@ class DQN(OffPolicyRLModel):
                 ######################
                 #print('timesteps: ', self.num_timesteps)
                 if model_id == 0:
-                    f = open('/home/suh/Desktop/MLP/Assigning-Problem-master1/timesteps1.txt', 'w')
+                    f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps1.txt', 'w')
                     f.write(str(self.num_timesteps))
                     f.close()
                 else:
-                    f = open('/home/suh/Desktop/MLP/Assigning-Problem-master1/timesteps2.txt', 'w')
+                    f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps2.txt', 'w')
                     f.write(str(self.num_timesteps))
                     f.close()
                 ######################
 
-                if model_id == 0:
-                    np.save('./observation1.npy', total_obs1)
-                else:
-                    np.save('./observation2.npy', total_obs2)
+                # if model_id == 0:
+                #     np.save('./dqn_obs/observation1.npy', total_obs1)
+                # else:
+                #     np.save('./dqn_obs/observation2.npy', total_obs2)
 
+                gon_t = self.env.check_plane()
+                print(f'shapeshapeshape{gon_t.shape}')
+
+                if iii == 0:
+                    gon_total = np.array([gon_t])
+                    #gon_total = np.reshape(gon_total, (1,len(gon_total)))
+
+                else:
+                    #gon_t = np.reshape(gon_t, (1, len(gon_t)))
+                    gon_total = np.append(gon_total, [gon_t], axis=0)
+
+                np.save('./obs_A_B/obs_all.npy', gon_total)
             
 
 

@@ -48,7 +48,7 @@ def make_env(args, rank, seed=0):
 def env_t(model_id, num_timesteps, bestRewardCallback, model):
     print(model_id)
 
-    model.learn(total_timesteps=num_timesteps, model_id=model_id, log_interval=100, callback=bestRewardCallback)
+    model.learn(total_timesteps=num_timesteps, model_id=model_id, log_interval=500, callback=bestRewardCallback)
 
 
 def main(args):

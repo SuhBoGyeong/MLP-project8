@@ -181,16 +181,11 @@ class FloorEnv(Env):
                         # print("#####")
                         # print("ID", a.id, a.state, a.target)
                         # print("BREAK")
-                        ###### 0519
-                        self.steps = []
                         break
                         
                     if len(a.actions) > 0:
 
-                        #print(a.actions[0])
-                        ###### 0519
-                        self.steps.append(self.check_plane())
-                        
+                        #print(a.actions[0])                     
                         a.move(a.actions[0]) 
 
                 if a.done == True:
@@ -199,8 +194,6 @@ class FloorEnv(Env):
                 
                 if self.done_count == self.pallet_counts:
                     print("ALL DONE, SIMTIME:", self.sim_time)
-                    ###### 0519
-                    self.steps = []
                     break
 
             self.cursor += 1
@@ -320,29 +313,46 @@ class FloorEnv(Env):
             do[i] = do[i][::-1]
         return do
     
-    def check_plane(self, tester_type):
-        result, ys, xs = self.empty_obs(tester_type)
-
-        # Pallet 분포
+    def check_plane(self):
+        result_a, ys, xs = self.empty_obs("a")
         for pallet_idx in self.pallets:
             a = self.pallets[pallet_idx]
             if a.target is not None:
-                if a.target[0] == tester_type:
+                if a.target[0] == "a":
                     i = 3 * a.target[1] + 1 # floor
                     j = a.target[2] + 1
 
-                    result[i][j] = 2 # Occupied / Reserved
+                    result_a[i][j] = 2 # Occupied / Reserved
             if a.state is not None:
                 if a.state[0] in ys and a.state[1] in xs:
                     i = ys.index(a.state[0])
                     j = xs.index(a.state[1])
 
-                    if result[i][j] != 2:
-                        result[i][j] = 1 # Pallet Located
+                    if result_a[i][j] != 2:
+                        result_a[i][j] = 1 # Pallet Located
                     if a.test_time > 0:
-                        # 테스트중일 경우...
-                        result[i][j] = 2 + a.test_time / self.map.tester_mean
-        result = np.array(result)
+                        result_a[i][j] = 2 + a.test_time / self.map.tester_mean
+        
+        result_b, ys, xs = self.empty_obs("b")
+        for pallet_idx in self.pallets:
+            a = self.pallets[pallet_idx]
+            if a.target is not None:
+                if a.target[0] == "a":
+                    i = 3 * a.target[1] + 1 # floor
+                    j = a.target[2] + 1
+
+                    result_b[i][j] = 2 # Occupied / Reserved
+            if a.state is not None:
+                if a.state[0] in ys and a.state[1] in xs:
+                    i = ys.index(a.state[0])
+                    j = xs.index(a.state[1])
+
+                    if result_b[i][j] != 2:
+                        result_b[i][j] = 1 # Pallet Located
+                    if a.test_time > 0:
+                        result_b[i][j] = 2 + a.test_time / self.map.tester_mean
+        
+        result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
         for i in range(len(result)):
             result[i] = result[i][::-1]
         return result
