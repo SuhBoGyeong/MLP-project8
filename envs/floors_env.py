@@ -131,6 +131,10 @@ class FloorEnv(Env):
         Window를 지정했을 때 메모리에 저장할 데이터는 action이 필요했던 순간들을 저장해야할까
         아니면 매 시뮬레이션 스텝마다 저장해서 봐야할까 아마 이거인듯.. 근데 위에껄로 되어있음 고치자
         '''
+
+        # 0519
+        self.steps = []
+
         # print("IN STEP:", cursor_thread, id(self))
         a = self.pallets[self.cursor]
 
@@ -173,6 +177,10 @@ class FloorEnv(Env):
                 a.enter()
 
             # 입장이 됨
+
+            ## 0519
+            print('plane added to steps ------------')
+            self.steps.append(self.check_plane())
             
             if a.state is not None:
                 if a.done == False:                
@@ -181,6 +189,7 @@ class FloorEnv(Env):
                         # print("#####")
                         # print("ID", a.id, a.state, a.target)
                         # print("BREAK")
+
                         break
                         
                     if len(a.actions) > 0:
@@ -256,7 +265,7 @@ class FloorEnv(Env):
 
         return r
 
-    def obs(self, tester_type):
+    def obs(self, tester_type, renew_memory=True):
         result, ys, xs = self.empty_obs(tester_type)
 
         # Pallet 분포
@@ -337,7 +346,7 @@ class FloorEnv(Env):
         for pallet_idx in self.pallets:
             a = self.pallets[pallet_idx]
             if a.target is not None:
-                if a.target[0] == "a":
+                if a.target[0] == "b":
                     i = 3 * a.target[1] + 1 # floor
                     j = a.target[2] + 1
 
@@ -353,12 +362,11 @@ class FloorEnv(Env):
                         result_b[i][j] = 2 + a.test_time / self.map.tester_mean
         
         result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
-        for i in range(len(result)):
-            result[i] = result[i][::-1]
+        result = result[::-1]
         return result
     
     def spit_steps(self):
-        return self.steps
+        return np.array(self.steps)
 
 
 if __name__ == "__main__":

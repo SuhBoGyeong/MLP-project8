@@ -23,7 +23,7 @@ def main(args):
 
     obs = env.reset()
     done = False
-    num_steps = 500
+    num_steps = 1
     count = 0
 
     while not done and count < num_steps:
@@ -43,10 +43,10 @@ def main(args):
         plt.title(f'#{count} Action {action}')
         plt.savefig(f'obs/ob{count}.png')
 
-        # for i in range(4):
-        #     plt.imshow(mem[i], cmap='gray')
-        #     plt.title(f'#{count}-m{i}')
-        #     plt.savefig(f'obs/memory/ob{count}-m{i}.png')
+        for i in range(4):
+            plt.imshow(mem[i], cmap='gray')
+            plt.title(f'#{count}-m{i}')
+            plt.savefig(f'obs/memory/ob{count}-m{i}.png')
         
         # for i in range(len(steps)):
         #     plt.imshow(steps[i], cmap='gray')

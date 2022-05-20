@@ -233,26 +233,26 @@ class DQN(OffPolicyRLModel):
 
 
 
-                        new_obs_forsave = np.array(new_obs)
+                        # new_obs_forsave = np.array(new_obs)
                 
-                        if iii == 0:
-                            if model_id == 0:
-                                total_obs1 = new_obs_forsave
-                                total_obs1 = np.reshape(total_obs1, (1,len(total_obs1)))
-                            else:
-                                total_obs2 = new_obs_forsave
-                                total_obs2 = np.reshape(total_obs2, (1,len(total_obs2))) 
-                        else:
-                            new_obs_forsave = np.reshape(new_obs_forsave, (1, len(new_obs_forsave)))
-                            if model_id == 0:
-                                total_obs1 = np.concatenate((total_obs1, new_obs_forsave), axis=0)
-                            else:
-                                total_obs2 = np.concatenate((total_obs2, new_obs_forsave), axis=0)
+                        # if iii == 0:
+                        #     if model_id == 0:
+                        #         total_obs1 = new_obs_forsave
+                        #         total_obs1 = np.reshape(total_obs1, (1,len(total_obs1)))
+                        #     else:
+                        #         total_obs2 = new_obs_forsave
+                        #         total_obs2 = np.reshape(total_obs2, (1,len(total_obs2))) 
+                        # else:
+                        #     new_obs_forsave = np.reshape(new_obs_forsave, (1, len(new_obs_forsave)))
+                        #     if model_id == 0:
+                        #         total_obs1 = np.concatenate((total_obs1, new_obs_forsave), axis=0)
+                        #     else:
+                        #         total_obs2 = np.concatenate((total_obs2, new_obs_forsave), axis=0)
                         
-                        if model_id == 0:
-                            print(total_obs1.shape)
-                        else:
-                            print(total_obs2.shape)
+                        # if model_id == 0:
+                        #     print(total_obs1.shape)
+                        # else:
+                        #     print(total_obs2.shape)
                         
 
 
@@ -366,23 +366,32 @@ class DQN(OffPolicyRLModel):
                 # else:
                 #     np.save('./dqn_obs/observation2.npy', total_obs2)
 
-                gon_t = self.env.check_plane()
-                print(f'shapeshapeshape{gon_t.shape}')
+                # steps = self.env.spit_steps()
+                # print(f'shape_of_steps = {steps.shape}')
 
-                if iii == 0:
-                    gon_total = np.array([gon_t])
-                    #gon_total = np.reshape(gon_total, (1,len(gon_total)))
+                # if iii == 0:
+                #     if model_id == 0:
+                #         total1 = np.array(steps)
+                #         actions1 = np.array([env_action])
+                #         np.save('./steps/every_step_1.npy', total1)
+                #         np.save('./steps/actions_1.npy', actions1)
+                #     else:
+                #         total2 = np.array(steps)
+                #         actions2 = np.array([env_action])
+                #         np.save('./steps/every_step_2.npy', total2)
+                #         np.save('./steps/actions_2.npy', actions2)
 
-                else:
-                    #gon_t = np.reshape(gon_t, (1, len(gon_t)))
-                    gon_total = np.append(gon_total, [gon_t], axis=0)
-
-                np.save('./obs_A_B/obs_all.npy', gon_total)
-            
-
-
-                
-
+                # else:
+                #     if model_id == 0:
+                #         total1 = np.append(total1, steps, axis=0)
+                #         actions1 = np.append(actions1, [env_action], axis=0)
+                #         np.save('./steps/every_step_1.npy', total1)
+                #         np.save('./steps/actions_1.npy', actions1)
+                #     else:
+                #         total2 = np.append(total2, steps, axis=0)
+                #         actions2 = np.append(actions2, [env_action], axis=0)
+                #         np.save('./steps/every_step_2.npy', total2)
+                #         np.save('./steps/actions_2.npy', actions2)
 
         return self
     

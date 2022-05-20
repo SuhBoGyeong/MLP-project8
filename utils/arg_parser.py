@@ -15,7 +15,7 @@ def common_arg_parser():
     parser.add_argument('--seed', help='RNG seed', type=int, default=None)
     parser.add_argument('--alg', help='Algorithm', type=str, default='sac')
     
-    parser.add_argument('--num_timesteps', type=float, default=1000) # 기존에는 2e10,
+    parser.add_argument('--num_timesteps', type=float, default=50) # 기존에는 2e10,
     parser.add_argument('--network', help='network type (mlp, cnn, lstm, cnn_lstm, conv_only)', default='mlp_big')
     parser.add_argument('--num_env', help='Number of environment copies being run in parallel. When not specified, set to number of cpus for Atari, and to 1 for Mujoco', default=None, type=int)
     parser.add_argument('--play', default=False, action='store_true')
