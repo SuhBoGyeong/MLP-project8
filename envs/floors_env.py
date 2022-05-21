@@ -14,12 +14,6 @@ from envs.components.pallet import Pallet
 
 class FloorEnv(Env):
     def __init__(self, args=None, dim=2, title="RL"):
-
-        self.debug_obs = []
-        self.steps = []
-
-
-
         self.pallet_counts = args.pallet_counts
         self.title = title
         self.dim = dim
@@ -82,6 +76,8 @@ class FloorEnv(Env):
             else:
                 enter = False
             a = self.createPallet(enter=enter)
+            ## self.map.agents에 agent들 넣어줘야했다! 0520
+            self.map.agents[pallet_idx] = a
 
         self.saveBuffer(self.title)
 
@@ -120,7 +116,7 @@ class FloorEnv(Env):
                 buffers = self.buffers
             self.map.render(buffers=buffers, save=save, show=show, movie_name=movie_name)
 
-    def step(self, action, cursor_thread):
+    def step(self, action, cursor_thread, timestep):
         '''
         이미 Route가 Assign된 애들은 simulate하고, 액션이 필요한 애만 지정해야함.
         따라서 Return하는 State는 다음에 Action이 필요한 pallet가 바라본 현 상태여야함.
@@ -131,16 +127,12 @@ class FloorEnv(Env):
         Window를 지정했을 때 메모리에 저장할 데이터는 action이 필요했던 순간들을 저장해야할까
         아니면 매 시뮬레이션 스텝마다 저장해서 봐야할까 아마 이거인듯.. 근데 위에껄로 되어있음 고치자
         '''
-
-        # 0519
-        self.steps = []
-
         # print("IN STEP:", cursor_thread, id(self))
         a = self.pallets[self.cursor]
 
         if action == 5:
             # 대기
-            reward = np.count_nonzero(self.obs(tester_type=a.tester_type()) == 2) / 25
+            reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
         else:
             # 대기가 아님
             routes = a.autopilot(flag='rl', floor=action)
@@ -154,11 +146,7 @@ class FloorEnv(Env):
                 a.move(a.actions[0])
                 
                 # Assign된 검사기의 수 리턴
-                reward = np.count_nonzero(self.obs(tester_type=a.tester_type()) == 2) / 25
-
-        ################# 0519
-        ## debuging을 위해 action을 취한 직후의 memory를 그대로 빼와봤다
-        self.debug_obs = self.spit_memoery().copy()
+                reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
 
         if self.cursor == self.pallet_counts -1:
             # 한바퀴를 다 수행하였을 때만 현화면 저장
@@ -168,7 +156,9 @@ class FloorEnv(Env):
         # 어차피 다음 차례에 이 pallet로 돌아옴
         self.cursor += 1
         
+        count = 0
         while True:
+            count += 1
             # Simulation
             self.cursor = self.cursor % self.pallet_counts
             a = self.pallets[self.cursor]
@@ -177,11 +167,14 @@ class FloorEnv(Env):
                 a.enter()
 
             # 입장이 됨
+            if a.target is not None:
+                temp = (a.target[1], a.target[2])
+            else:
+                temp = None
+            plane = self.check_plane()
+            if cursor_thread == 0:
+                np.save(f'./everystep/memory0/binary/st{timestep:03d}-itr{count:03d}-p{self.cursor}:{a.state},{temp}.npy', plane)
 
-            ## 0519
-            print('plane added to steps ------------')
-            self.steps.append(self.check_plane())
-            
             if a.state is not None:
                 if a.done == False:                
                     if len(a.actions) == 0:
@@ -189,18 +182,29 @@ class FloorEnv(Env):
                         # print("#####")
                         # print("ID", a.id, a.state, a.target)
                         # print("BREAK")
-
                         break
                         
                     if len(a.actions) > 0:
 
                         #print(a.actions[0])                     
-                        a.move(a.actions[0]) 
+                        a.move(a.actions[0])
 
                 if a.done == True:
                     # print("DONE: ", a.id)
                     self.done_count += 1
-                
+
+                # break하는 경우는 action이 필요한 경우
+                # break하지 않앗다면, 움직임이 있었을 것이고, 그 후 memory를 update하면 된다.
+                self.update_memory(a.tester_type())
+
+                ## update될 때 마다 plane을 check 해서 저장하려고 한다.
+                # plane = self.check_plane()
+                # if cursor_thread == 0:
+                #     np.save(f'./everystep/memory0/binary/t_step{timestep}-itr{count}.npy', plane)
+                # else:
+                #     np.save(f'./everystep/memory1/binary/t_step{timestep}-itr{count}.npy', plane)
+
+
                 if self.done_count == self.pallet_counts:
                     print("ALL DONE, SIMTIME:", self.sim_time)
                     break
@@ -211,7 +215,7 @@ class FloorEnv(Env):
                 # 한바퀴를 다 수행하였을 때만 현화면 저장
                 self.saveBuffer(self.title)
 
-        obs = self.obs(tester_type=a.tester_type()) # 현상태의 state           
+        obs = self.get_memory(tester_type=a.tester_type()) # 현상태의 state           
 
         if self.done_count == self.pallet_counts:
             self.done = True
@@ -265,7 +269,19 @@ class FloorEnv(Env):
 
         return r
 
-    def obs(self, tester_type, renew_memory=True):
+    def obs(self, tester_type):
+        self.update_memory(tester_type)
+        return self.get_memory(tester_type)
+
+    def get_memory(self, tester_type):
+        # window size 0인 경우 제외
+        if tester_type == 'a':
+            return np.array(self.memoryA).flatten()
+
+        else:
+            return np.array(self.memoryB).flatten()
+
+    def update_memory(self, tester_type):
         result, ys, xs = self.empty_obs(tester_type)
 
         # Pallet 분포
@@ -286,41 +302,16 @@ class FloorEnv(Env):
                         result[i][j] = 1 # Pallet Located
                     if a.test_time > 0:
                         # 테스트중일 경우...
+                        # 0520 테스트가 맞쳐진 경우 값이 제 각각이긴 할 것이다.
                         result[i][j] = 2 + a.test_time / self.map.tester_mean
 
-        if self.dim == 1:
-            r = self.flatten_obs(result)
-        elif self.dim == 2:
-            r = result
-        
-        if self.args.window_size > 0:
-            if tester_type == 'a':
-                del self.memoryA[-1]
-                self.memoryA.insert(0, r)
-                return np.array(self.memoryA).flatten()
-
-            else:
-                del self.memoryB[-1]
-                self.memoryB.insert(0, r)
-                return np.array(self.memoryB).flatten()
-
-            # TODO dim=2인 경우에 flatten을 할 경우 차원 사라짐
-            return np.array(self.memory).flatten()
+        # window_size가 0인 경우 그냥 일단 제외하고 만들었다.
+        if tester_type == 'a':
+            del self.memoryA[-1]
+            self.memoryA.insert(0, result)
         else:
-            return r
-
-    def spit_memoery(self, reverse=False):
-        mem = np.array(self.memoryA)
-        if reverse:
-            for i in range(len(mem)):
-                mem[i] = mem[i][::-1]
-        return mem
-
-    def spit_debug_obs(self):
-        do = self.debug_obs.copy()
-        for i in range(len(do)):
-            do[i] = do[i][::-1]
-        return do
+            del self.memoryB[-1]
+            self.memoryB.insert(0, result)
     
     def check_plane(self):
         result_a, ys, xs = self.empty_obs("a")
@@ -362,11 +353,8 @@ class FloorEnv(Env):
                         result_b[i][j] = 2 + a.test_time / self.map.tester_mean
         
         result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
-        result = result[::-1]
+        # result = result[::-1]
         return result
-    
-    def spit_steps(self):
-        return np.array(self.steps)
 
 
 if __name__ == "__main__":

@@ -124,6 +124,8 @@ class Pallet:
         t_idx = list(reversed(counts)).index(0)
         target_x = len(counts) - t_idx - 1
 
+        ###여기까지 이상 없음
+
         actions += ["r"] * (target_x + 1)
 
         # 검사기 진입 후 탈출
@@ -131,10 +133,8 @@ class Pallet:
         actions += ["d"]
         #self.test_count+=1
 
-        # Lift로 이동
+        # Lift 바로 앞까지 이동
         actions += ["r"] * (1 + t_idx)
-
-
 
         if tester_type == "b":
             # 종료로

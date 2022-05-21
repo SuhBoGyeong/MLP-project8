@@ -227,7 +227,7 @@ class DQN(OffPolicyRLModel):
                 #######################################################################
                 while True:
                     if self.env.cursor_thread == model_id:
-                        new_obs, rew, done, info = self.env.step(env_action, self.env.cursor_thread)
+                        new_obs, rew, done, info = self.env.step(env_action, self.env.cursor_thread, iii)
                         print('obs shape: ', new_obs.shape)
 
 

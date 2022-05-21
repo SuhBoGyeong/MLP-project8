@@ -170,6 +170,5 @@ tmp/*.csv
 tmp/*
 
 # gonKim
-obs/
-obs_A_B/
-steps/
+everystep/
+tests/
