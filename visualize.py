@@ -8,12 +8,12 @@ import os
 path = './everystep/memory0/binary/'
 file_li = os.listdir(path)
 file_li.sort()
-for name in file_li[:50]:
+for name in file_li[len(file_li) - 50:]:
     file_path = path + name
     f = np.load(file_path)
     
     plt.imshow(f, cmap='gray', vmin=-1.0, vmax=4.0)
-    plt.axis([-0.5, 13.5, -0.5, 13.5])
+    plt.axis([-0.5, 16.5, -0.5, 13.5])
     plt.savefig('./everystep/memory0/'+name[:-4]+'.png')
 
 '''

@@ -108,6 +108,20 @@ class FloorEnv(Env):
         self.buffers[buffer_type].append(copy.deepcopy(self.pallets))
 
         self.sim_time += 1
+    
+    #### 0523 김건 ####
+    # 나중에 시각화 할때 쓸듯. saveBuffer 괜히 건드리면 안될거같아서 그냥 따로 만듬
+    def resetPalletBuffer(self):
+        self.pallet_buffer = {}
+
+    def savePalletBuffer(self, timestep, itr):
+        if not timestep:
+            self.pallet_buffer[timestep] = []
+        
+        self.pallet_buffer[timestep].append(copy.deepcopy(self.pallets))
+    ##################
+    
+
 
     def render(self, buffers=None, save=False, show=True, still=False, movie_name="movie_name"):
         self.map.agents = self.pallets
@@ -169,7 +183,8 @@ class FloorEnv(Env):
             if a.state == None:
                 a.enter()
 
-            # 입장이 됨
+            ##############
+            # 입장 처리가 되던 말던 그냥 무조건 모든 step을 찍으려고 한다.
             if a.target is not None:
                 temp = (a.target[1], a.target[2])
             else:
@@ -177,36 +192,36 @@ class FloorEnv(Env):
             plane = self.check_plane()
             if cursor_thread == 0:
                 np.save(f'./everystep/memory0/binary/st{timestep:03d}-itr{count:03d}-p{self.cursor}:{a.state},{temp}.npy', plane)
+            ##############
 
+            # 입장이 됨
             if a.state is not None:
                 if a.done == False:                
                     if len(a.actions) == 0:
-                        # Action이 필요한 애가 선정.
-                        # print("#####")
-                        # print("ID", a.id, a.state, a.target)
-                        # print("BREAK")
+                        # 입장이 돼서 state도 있고, done도 아닌데
+                        # actions가 비어있다? 새로 tester에 배정되어야하는 상태인 것!
+                        # 따라서 break!
                         break
                         
-                    if len(a.actions) > 0:
-
-                        #print(a.actions[0])                     
+                    elif len(a.actions) > 0:
                         a.move(a.actions[0])
 
+                # 위에서 move 후 a.done이 True로 바뀌었으면 그거 카운트해줌
                 if a.done == True:
                     # print("DONE: ", a.id)
                     self.done_count += 1
+                '''
+                0523
+                exit으로 가서 a.done이 True가 된 후, 다시 cursor가 돌아서 이 pallet로 왔다고 하자
+                그럼 enter처리가 될것이지만, pallet.py코드를 보면 enter처리가 됐다고 해서 a.done이 False로 바뀌는 부분은 없었다.
+                그럼 입장이 된 후, if a.done == False에 걸리지도 않을 것이고, 또 자연스래 if a.done == True에 걸려 self.done_count를 올려버릴 것이다.
+                그래서 일단 enter에 self.done = False로 해주는 부분을 추가했다.
+                '''
 
                 # break하는 경우는 action이 필요한 경우
-                # break하지 않앗다면, 움직임이 있었을 것이고, 그 후 memory를 update하면 된다.
+                # action이 필요한 pallet 전에 마지막으로 움직인 pallet가 있을 것
+                # 여기에 update_memory를 배치함으로써 걔가 움직이고 난 직후 상황이 여기에 memory에 마지막에 저장되게 된다.
                 self.update_memory(a.tester_type())
-
-                ## update될 때 마다 plane을 check 해서 저장하려고 한다.
-                # plane = self.check_plane()
-                # if cursor_thread == 0:
-                #     np.save(f'./everystep/memory0/binary/t_step{timestep}-itr{count}.npy', plane)
-                # else:
-                #     np.save(f'./everystep/memory1/binary/t_step{timestep}-itr{count}.npy', plane)
-
 
                 if self.done_count == self.pallet_counts:
                     print("ALL DONE, SIMTIME:", self.sim_time)
@@ -317,45 +332,38 @@ class FloorEnv(Env):
             self.memoryB.insert(0, result)
     
     def check_plane(self):
-        result_a, ys, xs = self.empty_obs("a")
+        result = np.zeros((len(self.map.map), len(self.map.map[0])))
+
+        # 맵 구성
+        for i in range(len(self.map.map)):
+            for j in range(len(self.map.map[0])):
+                map_type = self.map.map[i][j]
+                if map_type == self.map.invalid_flag:
+                    # 빈칸
+                    result[i][j] = -1
+    
         for pallet_idx in self.pallets:
             a = self.pallets[pallet_idx]
             if a.target is not None:
                 if a.target[0] == "a":
                     i = 3 * a.target[1] + 1 # floor
-                    j = a.target[2] + 1
-
-                    result_a[i][j] = 2 # Occupied / Reserved
+                    j = a.target[2] + 2
+                else:
+                    i = 3 * a.target[1] + 1
+                    j = a.target[2] + 2 + 7
+                
+                result[i][j] = 2 # Occupied / Reserved
+                
             if a.state is not None:
-                if a.state[0] in ys and a.state[1] in xs:
-                    i = ys.index(a.state[0])
-                    j = xs.index(a.state[1])
+                i = a.state[0]
+                j = a.state[1]
 
-                    if result_a[i][j] != 2:
-                        result_a[i][j] = 1 # Pallet Located
-                    if a.test_time > 0:
-                        result_a[i][j] = 2 + a.test_time / self.map.tester_mean
+                if result[i][j] != 2:
+                    result[i][j] = 1 # Pallet Located
+                if a.test_time > 0:
+                    result[i][j] = 2 + a.test_time / self.map.tester_mean
         
-        result_b, ys, xs = self.empty_obs("b")
-        for pallet_idx in self.pallets:
-            a = self.pallets[pallet_idx]
-            if a.target is not None:
-                if a.target[0] == "b":
-                    i = 3 * a.target[1] + 1 # floor
-                    j = a.target[2] + 1
-
-                    result_b[i][j] = 2 # Occupied / Reserved
-            if a.state is not None:
-                if a.state[0] in ys and a.state[1] in xs:
-                    i = ys.index(a.state[0])
-                    j = xs.index(a.state[1])
-
-                    if result_b[i][j] != 2:
-                        result_b[i][j] = 1 # Pallet Located
-                    if a.test_time > 0:
-                        result_b[i][j] = 2 + a.test_time / self.map.tester_mean
-        
-        result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
+        # result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
         # result = result[::-1]
         return result
 
