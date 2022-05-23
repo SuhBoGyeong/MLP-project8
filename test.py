@@ -112,7 +112,7 @@ def main(args):
     print('next actions for ~tester b ~ exit: ', pallets[0].actions)
 
     #### 일단 action은  제대로 할당되는 거 확인함. (exit까지의 action이 옳게 주어짐)
-    ###마찬가지로 여기서도 test_time=1로 임의로 할당해 바로 움직이게 하자. (그냥 for 문 안에 줘버려도 상관없어서 일단 그렇게 함)
+    ###마찬가지로 여기서도 test_target_time=1로 임의로 할당해 바로 움직이게 하자. (그냥 for 문 안에 줘버려도 상관없어서 일단 그렇게 함)
     
     k = len(pallets[0].actions)
     for i in range(k):
@@ -134,38 +134,42 @@ def main(args):
     while pallets[1].actions:
         print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
         if pallets[1].actions[0] == 'd':
-            pallets[1].move(pallets[1].actions[0])
             break
         pallets[1].move(pallets[1].actions[0])
     
-    print('1. now the pallet gets its test_target_time: ', pallets[1].test_target_time)
+    print(f'1. before the test in a tester A - test_time : {pallets[1].test_time} , test_target_time : {pallets[1].test_target_time}')
     while pallets[1].actions:
         print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
         pallets[1].move(pallets[1].actions[0])
-    print('after testing in the a: ', pallets[1].state, pallets[1].actions, pallets[1].test_target_time)
+    print(f'after the test in a tester A - state:{pallets[1].state}, action:{pallets[1].actions}, test_time:{pallets[1].test_time}, test_target_time:{pallets[1].test_target_time}')
 
     ### 이제 tester b로 가게끔 action 할당하자. 
     pallets[1].autopilot(flag='rl', floor=4)
-    print(pallets[1].test_target_time)
+    print(f'after assigning the pallet to a tester B - test_time : {pallets[1].test_time}, test_target_time : {pallets[1].test_target_time}')
     ### 일단 a를 나온 후에도 test_target_time은 동일한 값으로 유지됨. 
     while pallets[1].actions:
         #print(pallets[1].test_target_time)
         print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
         if pallets[1].actions[0] == 'd':
-            pallets[1].move(pallets[1].actions[0])
             break
         pallets[1].move(pallets[1].actions[0])
     
-    print('2. now the pallet gets its test_target_time: ', pallets[1].test_target_time)
+    print(f'2. before the test in a tester B - test_time : {pallets[1].test_time} , test_target_time : {pallets[1].test_target_time}')
     while pallets[1].actions:
         print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
         pallets[1].move(pallets[1].actions[0])
-    print('after testing in the a: ', pallets[1].state, pallets[1].actions, pallets[1].test_target_time)
+    print(f'after the test in a tester B - state:{pallets[1].state}, action:{pallets[1].actions}, test_time:{pallets[1].test_time}, test_target_time:{pallets[1].test_target_time}')
     
     ### 코드를 여러 번 실행하다보면, print 한 라인 중 1. now the pallet gets its test_target_time과 2. // 가 
     ### 서로 다른 값을 가지는 경우 발생함을 확인했다. 
     ### 즉 b로 들어갈 때 test_target_time도 다시 할당되는 것 확인 함. 
     ### 근데 좀 많은 경우가 같은 값으로 할당되는 것 같은데, 기분탓인가????
+
+    ##### 0523 김건 추가 수정
+    '''
+    test_time, test_target_time을 모두 찍어봤는데 그냥 잘 된다. 층수가 배정될때가 아니라 tester기에 들어가면 그 때 바로 test time이 초기화되고, target_test_time이 선정된다.
+    사실 코드 보니까 그렇게 되게 돼있던데, 직접 눈으로 한번 확인해봤다.
+    '''
 
     ### 테스트 완료 ###
 
@@ -184,14 +188,14 @@ if __name__ == "__main__":
 3. move : 제대로 원하는 곳으로 움직이며, 움직일 수 없는 경우 움직이지 않는가. actions에서 행동한 부분은 알아서 잘 빼는가
     -> 제대로 잘 움직이는 듯. tester 들어간 후 시간 찰때까지 안나온다. 굿. actions도 잘 갱신된다.
     
-    **********-> 아직 exit까지 가는 경우 어케 되는지 확인 안해봤지만, 이대로면 잘 될듯?
+    **********-> 아직 exit까지 가는 경우 어케 되는지 확인 안해봤지만, 이대로면 잘 될듯? (완료)
 4. 테스터기에 들어가면 알아서 시간 할당 잘하는가? 시간 간격은 어떤가?
     -> 잘 할당한다.
     -> 하지만 time_mean이 50, std가 10이었는데, 이 경우 타임스텝을 50번이나 돌아야 테스트기에서 나오게된다.
         의도한 부분과 맞지 않다고 생각해 5, 1로 일단 줄였다.
-    **********-> 다만 이 경우 테스터기에서 나와도 그 숫자를 유지함 (2보다 큰 숫자). 이게 b로들어갈때 어떨지는 아직
+    **********-> 다만 이 경우 테스터기에서 나와도 그 숫자를 유지함 (2보다 큰 숫자). 이게 b로들어갈때 어떨지는 아직 (완료)
     확인은 안해봄
-5. *********** b테스터기로 갈때는 어떻게 되는지, 그게 끝나고서도 exit으로 잘 나가는지 확인해보지 않았다.
+5. *********** b테스터기로 갈때는 어떻게 되는지, 그게 끝나고서도 exit으로 잘 나가는지 확인해보지 않았다. (완료)
     -> 이 경우 main함수를 돌려 쌓은 로그를 visualize.py로 시각화 해봄으로써 조금 확인했는데 어느정도 잘 되는 느낌이었다.
     visualize.py에 관한 설명은 해당 파일에 해놓겠다.
 '''

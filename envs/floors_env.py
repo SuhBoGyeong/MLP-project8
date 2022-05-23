@@ -77,7 +77,9 @@ class FloorEnv(Env):
                 enter = False
             a = self.createPallet(enter=enter)
             ## self.map.agents에 agent들 넣어줘야했다! 0520
-            self.map.agents[pallet_idx] = a
+            # self.map.agents[pallet_idx] = a
+            ## 0523 지금 보니 saveBuffer에 해당 로직이 있엇는데 오타가 있었다.
+            ## self.map.pallets = self.pallets가 아니라 self.map.agents여야함
 
         self.saveBuffer(self.title)
 
@@ -102,13 +104,13 @@ class FloorEnv(Env):
         if not buffer_type in self.buffers:
             self.buffers[buffer_type] = []
 
-        self.map.pallets = self.pallets
+        self.map.agents = self.pallets
         self.buffers[buffer_type].append(copy.deepcopy(self.pallets))
 
         self.sim_time += 1
 
     def render(self, buffers=None, save=False, show=True, still=False, movie_name="movie_name"):
-        self.map.pallets = self.pallets
+        self.map.agents = self.pallets
         if still == True:
             self.map.render(buffers=None)
         else:
@@ -140,6 +142,7 @@ class FloorEnv(Env):
             if routes == False:
                 # 해당 검사기가 꽉참. Penalize!
                 # print("FULL", a.id)
+                # pallet에 action 지정 자체가 안되게 됨. 얘는 그럼 enter도 안되고 걍 있는것임.
                 reward = -1
             else:
                 # print("RUN RL ACTION ID", a.id, a.state, a.target, a.test_count, self.done_count)
