@@ -86,11 +86,89 @@ def main(args):
         plt.savefig(f'test/{idx + 1}.png')
     ### 테스트 완료  ###
 
+    ### 220522 보경 추가
+    '''
+    앞에서 tester a까지의 행동 수행한 후, pallet[0]에 다시 autopilot 적용하면
+    다음 tester b 를 거치고 exit까지의 행동을 할당할 것. 예시로 floor=4로 설정 후 확인해봄.
+    근데 위 코드에서 action이 d 일 경우 break 하게끔 설정되어 있어서, 
+    일단은 임시방편으로 남은 action ['d', 'r'] 수행하는 것도 추가해 줌.
+    즉, 처음으로 할당된 action이 우선 모두 실행되게끔 한다. 
 
-## 2번째 팔레트 target 지정까지 잘 되는데, move해도 안움직인다. move하고 정말 안움직이는게 맞는건지 확인하고
-# 움직여야하는거였다면 왜 안움직인건지 확인
-# -> lift 사용중이라 안들어가던거였음 pallet.py move함수의 리프트 사용중, 충돌 여부 함수
-# move마다 pallets가 어떻게 돌아가는지 step 함수처럼 구현을 해서 확인해보자
+    '''
+    print('left actions from 1 stage of pallet 0 (~tester a): ', pallets[0].actions, 'current state: ', pallets[0].state)
+    k = len(pallets[0].actions)
+    pallets[0].test_target_time = 1   #### test_time=1 으로 우선 줘서, 바로 움직이게 하자.
+
+    for i in range (k):
+        pallets[0].move(pallets[0].actions[0])
+        print(f'{i+1}/{k}: state - ', pallets[0].state, ' left actions - ', pallets[0].actions)
+
+        
+    print('after actions from 1 stage, state: ', pallets[0].state)
+
+    ### 이제 tester b구역 진입, autopilot 이용해 action 할당. 임의로 floor=4 설정.
+    pallets[0].autopilot(flag='rl', floor=4)
+    print(f'pallet0 state : {pallets[0].state}, target : {pallets[0].target}')
+    print('next actions for ~tester b ~ exit: ', pallets[0].actions)
+
+    #### 일단 action은  제대로 할당되는 거 확인함. (exit까지의 action이 옳게 주어짐)
+    ###마찬가지로 여기서도 test_time=1로 임의로 할당해 바로 움직이게 하자. (그냥 for 문 안에 줘버려도 상관없어서 일단 그렇게 함)
+    
+    k = len(pallets[0].actions)
+    for i in range(k):
+        pallets[0].test_target_time = 1
+        pallets[0].move(pallets[0].actions[0])
+        print(f'{i+1}/{k}: state - ', pallets[0].state, ' left actions - ', pallets[0].actions)
+
+    ###exit 후 state None으로 바뀌면서 퇴장한 거 확인할 수 있다.
+
+    ### 테스트 완료 ###  
+
+    print('------------------------------------')
+    '''
+    테스트기 시간 할당 관련
+    a 테스터기 나와도 시간을 유지한다고 되어있는데, b로 들어갈 때 어떻게 되는지 확인해야 한다.
+    앞 코드에서 pallets[0]을 사용했고 퇴장시켰기 때문에 pallets[1]을 이용하자.
+    '''
+
+    while pallets[1].actions:
+        print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
+        if pallets[1].actions[0] == 'd':
+            pallets[1].move(pallets[1].actions[0])
+            break
+        pallets[1].move(pallets[1].actions[0])
+    
+    print('1. now the pallet gets its test_target_time: ', pallets[1].test_target_time)
+    while pallets[1].actions:
+        print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
+        pallets[1].move(pallets[1].actions[0])
+    print('after testing in the a: ', pallets[1].state, pallets[1].actions, pallets[1].test_target_time)
+
+    ### 이제 tester b로 가게끔 action 할당하자. 
+    pallets[1].autopilot(flag='rl', floor=4)
+    print(pallets[1].test_target_time)
+    ### 일단 a를 나온 후에도 test_target_time은 동일한 값으로 유지됨. 
+    while pallets[1].actions:
+        #print(pallets[1].test_target_time)
+        print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
+        if pallets[1].actions[0] == 'd':
+            pallets[1].move(pallets[1].actions[0])
+            break
+        pallets[1].move(pallets[1].actions[0])
+    
+    print('2. now the pallet gets its test_target_time: ', pallets[1].test_target_time)
+    while pallets[1].actions:
+        print('current state: ', pallets[1].state, 'left actions: ', pallets[1].actions)
+        pallets[1].move(pallets[1].actions[0])
+    print('after testing in the a: ', pallets[1].state, pallets[1].actions, pallets[1].test_target_time)
+    
+    ### 코드를 여러 번 실행하다보면, print 한 라인 중 1. now the pallet gets its test_target_time과 2. // 가 
+    ### 서로 다른 값을 가지는 경우 발생함을 확인했다. 
+    ### 즉 b로 들어갈 때 test_target_time도 다시 할당되는 것 확인 함. 
+    ### 근데 좀 많은 경우가 같은 값으로 할당되는 것 같은데, 기분탓인가????
+
+    ### 테스트 완료 ###
+
 
 if __name__ == "__main__":
     main(sys.argv)
