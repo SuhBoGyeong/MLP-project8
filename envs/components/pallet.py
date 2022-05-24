@@ -19,7 +19,7 @@ class Pallet:
     def enter(self):
         # 입장시 다른 팔레트가 이미 있는지 확인
         if self.map.entrance_status() == False and self.test_count == 0:
-            self.done = False
+            # self.done = False
             self.state = (0, 0)
 
     def exit(self):
@@ -90,7 +90,7 @@ class Pallet:
             self.test_time += 1
             if self.test_target_time > self.test_time:
                 moveable = False
-                
+
             ##### 0523 김건
             ## tester에서 나가는 순간 그 tester는 비어잇는거니까 거기 reserved되어있다고 판단하지 않게끔
             ## pallet의 target도 None으로 바꿔주기

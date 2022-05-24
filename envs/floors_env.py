@@ -82,6 +82,7 @@ class FloorEnv(Env):
             ## self.map.pallets = self.pallets가 아니라 self.map.agents여야함
 
         self.saveBuffer(self.title)
+        self.resetPalletBuffer()
 
         obs = self.obs(tester_type=self.pallets[0].tester_type())
 
@@ -110,17 +111,25 @@ class FloorEnv(Env):
         self.sim_time += 1
     
     #### 0523 김건 ####
-    # 나중에 시각화 할때 쓸듯. saveBuffer 괜히 건드리면 안될거같아서 그냥 따로 만듬
+    # 나중에 시각화 한 것을 이해하는데 쓸듯. saveBuffer 괜히 건드리면 안될거같아서 그냥 따로 만듬
     def resetPalletBuffer(self):
-        self.pallet_buffer = {}
+        self.pallet_buffer = []
 
-    def savePalletBuffer(self, timestep, itr):
-        if not timestep:
-            self.pallet_buffer[timestep] = []
+    def savePalletBuffer(self):
+        # if not timestep:
+        #     self.pallet_buffer[timestep] = []
         
-        self.pallet_buffer[timestep].append(copy.deepcopy(self.pallets))
+        self.pallet_buffer = []
+        for key in self.pallets:
+            pallet = self.pallets[key]
+            if pallet.state is None:
+                state = None
+            else:
+                state = list(pallet.state)
+            self.pallet_buffer.append([pallet.id, state])
+        self.pallet_buffer = np.array(self.pallet_buffer)
+        # self.pallet_buffer[timestep].append(copy.deepcopy(self.pallets))
     ##################
-    
 
 
     def render(self, buffers=None, save=False, show=True, still=False, movie_name="movie_name"):
@@ -160,7 +169,7 @@ class FloorEnv(Env):
                 reward = -1
             else:
                 # print("RUN RL ACTION ID", a.id, a.state, a.target, a.test_count, self.done_count)
-                a.move(a.actions[0])
+                # a.move(a.actions[0])
                 
                 # Assign된 검사기의 수 리턴
                 reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
@@ -171,7 +180,7 @@ class FloorEnv(Env):
 
         # 대기 혹은 wrong assign 때 다른 pallet에 대해 simulate 진행
         # 어차피 다음 차례에 이 pallet로 돌아옴
-        self.cursor += 1
+        # self.cursor += 1
         
         count = 0
         while True:
@@ -189,9 +198,11 @@ class FloorEnv(Env):
                 temp = (a.target[1], a.target[2])
             else:
                 temp = None
-            plane = self.check_plane()
+            plane = self.check_plane(a.state)
+            self.savePalletBuffer()
             if cursor_thread == 0:
-                np.save(f'./everystep/memory0/binary/st{timestep:03d}-itr{count:03d}-p{self.cursor}:{a.state},{temp}.npy', plane)
+                np.save(f'./everystep/memory0/binary/ts{timestep:03d}-itr{count:03d}-p{self.cursor}:s{a.state},t{temp}.npy', plane)
+                np.save(f'./everystep/memory0/pallets/ts{timestep:03d}-itr{count:03d}.npy', self.pallet_buffer)
             ##############
 
             # 입장이 됨
@@ -207,15 +218,20 @@ class FloorEnv(Env):
                         a.move(a.actions[0])
 
                 # 위에서 move 후 a.done이 True로 바뀌었으면 그거 카운트해줌
-                if a.done == True:
+                if a.done == True and a.test_count == 2:
                     # print("DONE: ", a.id)
                     self.done_count += 1
+                    a.test_count += 1
                 '''
                 0523
                 exit으로 가서 a.done이 True가 된 후, 다시 cursor가 돌아서 이 pallet로 왔다고 하자
                 그럼 enter처리가 될것이지만, pallet.py코드를 보면 enter처리가 됐다고 해서 a.done이 False로 바뀌는 부분은 없었다.
                 그럼 입장이 된 후, if a.done == False에 걸리지도 않을 것이고, 또 자연스래 if a.done == True에 걸려 self.done_count를 올려버릴 것이다.
-                그래서 일단 enter에 self.done = False로 해주는 부분을 추가했다.
+                이 경우 팔레트 하나만 완료돼도 self.done_count를 계속 올려버릴 수 잇는것 아닌가?
+                
+                그래서 a.test_count == 2라는 조건을 붙여주고, 체크 한번 했으면 test_count += 1을 해줘서 더 이상
+                중복되어 self.done_count가 올라가지 않도록 했다.
+                
                 '''
 
                 # break하는 경우는 action이 필요한 경우
@@ -331,7 +347,7 @@ class FloorEnv(Env):
             del self.memoryB[-1]
             self.memoryB.insert(0, result)
     
-    def check_plane(self):
+    def check_plane(self, state = (1, 0)):
         result = np.zeros((len(self.map.map), len(self.map.map[0])))
 
         # 맵 구성
@@ -363,6 +379,8 @@ class FloorEnv(Env):
                 if a.test_time > 0:
                     result[i][j] = 2 + a.test_time / self.map.tester_mean
         
+        if state is not None:
+            result[state[0]][state[1]] = -1
         # result = np.concatenate((np.array(result_a), np.array(result_b)), axis=1)
         # result = result[::-1]
         return result

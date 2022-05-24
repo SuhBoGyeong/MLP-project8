@@ -5,17 +5,33 @@ import os
 
 ## main함수가 있는 경로로부터 해당 path와 같이 폴더를 미리 만들고 main함수를 돌리면 log가 쌓인다.
 ## 그 후 이 파일을 실행하자
-path = './everystep/memory0/binary/'
-file_li = os.listdir(path)
-file_li.sort()
-for name in file_li[len(file_li) - 50:]:
-    file_path = path + name
-    f = np.load(file_path)
-    
-    plt.imshow(f, cmap='gray', vmin=-1.0, vmax=4.0)
-    plt.axis([-0.5, 16.5, -0.5, 13.5])
-    plt.savefig('./everystep/memory0/'+name[:-4]+'.png')
+path1 = './everystep/memory0/binary/'
+plane_li = os.listdir(path1)
+plane_li.sort()
+path2 = './everystep/memory0/pallets/'
+pallets_li = os.listdir(path2)
+pallets_li.sort()
 
+for i in range(5):
+    plane = plane_li[i]
+    pallets = pallets_li[i]
+    plane_path = path1 + plane
+    pallets_path = path2 + pallets
+    
+    plane_f = np.load(plane_path)
+    pallets_f = np.load(pallets_path, allow_pickle=True)
+
+    plt.imshow(plane_f, cmap='gray', vmin=-1.0, vmax=4.0)
+    plt.axis([-0.5, 16.5, -0.5, 13.5])
+    
+    states = ''
+    for pallet in pallets_f:
+        print(pallet)
+        temp = f'{pallet[0]}-{pallet[1]}, '
+        states += temp
+    plt.title(states)
+    # plt.annotate(states, xy=(0, 50), xytext=(50, 20) )
+    plt.savefig('./everystep/memory0/'+plane[:-4]+'.png')
 '''
 ### 간단한 설명 ###
 main 함수를 돌려 쌓은 로그를 시각화 하는 파일이다.
