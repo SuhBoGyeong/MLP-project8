@@ -218,21 +218,10 @@ class FloorEnv(Env):
                         a.move(a.actions[0])
 
                 # 위에서 move 후 a.done이 True로 바뀌었으면 그거 카운트해줌
-                if a.done == True and a.test_count == 2:
+                # 0524 생각해보니 enter가 안되면 어차피 여기 로직이 안돌아가겠네. a.test_count == 2 없애도 된다. 걍 착각한거다
+                if a.done == True:
                     # print("DONE: ", a.id)
-                    self.done_count += 1
-                    a.test_count += 1
-                '''
-                0523
-                exit으로 가서 a.done이 True가 된 후, 다시 cursor가 돌아서 이 pallet로 왔다고 하자
-                그럼 enter처리가 될것이지만, pallet.py코드를 보면 enter처리가 됐다고 해서 a.done이 False로 바뀌는 부분은 없었다.
-                그럼 입장이 된 후, if a.done == False에 걸리지도 않을 것이고, 또 자연스래 if a.done == True에 걸려 self.done_count를 올려버릴 것이다.
-                이 경우 팔레트 하나만 완료돼도 self.done_count를 계속 올려버릴 수 잇는것 아닌가?
-                
-                그래서 a.test_count == 2라는 조건을 붙여주고, 체크 한번 했으면 test_count += 1을 해줘서 더 이상
-                중복되어 self.done_count가 올라가지 않도록 했다.
-                
-                '''
+                    self.done_count += 1                
 
                 # break하는 경우는 action이 필요한 경우
                 # action이 필요한 pallet 전에 마지막으로 움직인 pallet가 있을 것
