@@ -229,34 +229,6 @@ class DQN(OffPolicyRLModel):
                     if self.env.cursor_thread == model_id:
                         new_obs, rew, done, info = self.env.step(env_action, self.env.cursor_thread, iii)
                         print('obs shape: ', new_obs.shape)
-
-
-
-
-                        # new_obs_forsave = np.array(new_obs)
-                
-                        # if iii == 0:
-                        #     if model_id == 0:
-                        #         total_obs1 = new_obs_forsave
-                        #         total_obs1 = np.reshape(total_obs1, (1,len(total_obs1)))
-                        #     else:
-                        #         total_obs2 = new_obs_forsave
-                        #         total_obs2 = np.reshape(total_obs2, (1,len(total_obs2))) 
-                        # else:
-                        #     new_obs_forsave = np.reshape(new_obs_forsave, (1, len(new_obs_forsave)))
-                        #     if model_id == 0:
-                        #         total_obs1 = np.concatenate((total_obs1, new_obs_forsave), axis=0)
-                        #     else:
-                        #         total_obs2 = np.concatenate((total_obs2, new_obs_forsave), axis=0)
-                        
-                        # if model_id == 0:
-                        #     print(total_obs1.shape)
-                        # else:
-                        #     print(total_obs2.shape)
-                        
-
-
-                        self.env.cursor_thread = (self.env.cursor_thread + 1) % 2
                         break
                     else:
                         # print(model_id, "waiting")

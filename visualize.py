@@ -12,7 +12,7 @@ path2 = './everystep/memory0/pallets/'
 pallets_li = os.listdir(path2)
 pallets_li.sort()
 
-for i in range(5):
+for i in range(300):
     plane = plane_li[i]
     pallets = pallets_li[i]
     plane_path = path1 + plane

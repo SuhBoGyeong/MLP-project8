@@ -51,6 +51,10 @@ class FloorEnv(Env):
         self.done = False
 
         self.sim_time = 0
+        
+        ##################################################
+        self.cursor_thread = 0
+        ##################################################
 
         if self.dim == 2:
             result, _, _ = self.empty_obs("a")
@@ -253,6 +257,17 @@ class FloorEnv(Env):
         with open(csv_path, 'a') as file_handler:
             file_handler.write(str(reward)+","+str(time.time())+"\n")
 
+
+        # pallet이 어떤 tester에 배정되어야하는지에 따라 agent를 지정해준다.
+        if self.pallets[self.cursor].tester_type() == 'a':
+            self.cursor_thread = 0
+        else:
+            self.cursor_thread = 1
+
+        # 어떤 agent에서 step 함수가 불러졌던간에, done이 True로 찍히면 dqn.py에서 env.reset()을 호출한다.
+        # 새로운 episode를 시작하게 되는 것이므로 당연히 agent 0 부터 다시 해야한다.
+        # 따라서 reset()에 self.cursor_thread = 0 을 해주는 부분을 담았다. 따라서 그 부분에 대해서는 여기서 굳이 뭘 바꿔줄 필요 x!
+
         return obs, reward, self.done, {"buffers": self.buffers}
 
     def current_pallet(self):
@@ -297,12 +312,24 @@ class FloorEnv(Env):
         return self.get_memory(tester_type)
 
     def get_memory(self, tester_type):
-        # window size 0인 경우 제외
         if tester_type == 'a':
-            return np.array(self.memoryA).flatten()
-
+            memory = copy.deepcopy(self.memoryA)
         else:
-            return np.array(self.memoryB).flatten()
+            memory = copy.deepcopy(self.memoryB)
+        
+        # get_memory가 필요한 부분은 while문 바깥밖에 없다. 얘가 불릴 때 cursor는 action 지정이 필요한 pallet을 가리킨다.
+        # 이 pallet은 entrance에 있거나, 가운데 lift 바로 왼쪽에서 대기 중이다. Tester에 들어있는 경우가 절대 없다.
+        # 따라서 마음 놓고 해당 pallet이 위치한 부분의 값을 아무렇게나 지정해도 된다.
+        a = self.pallets[self.cursor]
+        i = a.state[0]
+        # lift에 표시해야함.. 별 문제 없겠지? 만약 해당 칸에 다른 pallet이 있다면?? 문제가 될까?
+        # 안될거같다. 어차피 lift는 점유되면 못타는 것이기도 하고, 여기에 뭐가 있던간에 층수를 설정하는데 문제가 되는건 아닐거같다.. 물론 영향이 있을순 잇겠지만.. 일단 이렇게 하자.
+        j = 0
+
+        memory[0][i][j] = 10
+
+        # window size 0인 경우는 고려하지 않는다.
+        return np.array(memory).flatten()
 
     def update_memory(self, tester_type):
         result, ys, xs = self.empty_obs(tester_type)
