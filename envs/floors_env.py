@@ -216,6 +216,7 @@ class FloorEnv(Env):
                         # 입장이 돼서 state도 있고, done도 아닌데
                         # actions가 비어있다? 새로 tester에 배정되어야하는 상태인 것!
                         # 따라서 break!
+                        self.update_memory(a.tester_type())
                         break
                         
                     elif len(a.actions) > 0:
@@ -343,14 +344,40 @@ class FloorEnv(Env):
             else:
                 return np.array(self.memoryB).flatten()
 
-    def update_memory(self, tester_type):
-        result, ys, xs = self.empty_obs(tester_type)
+    def update_memory(self):
+        # window_size가 0인 경우 그냥 일단 제외하고 만들었다.
+        result, ys, xs = self.empty_obs('a')
 
         # Pallet 분포
         for pallet_idx in self.pallets:
             a = self.pallets[pallet_idx]
             if a.target is not None:
-                if a.target[0] == tester_type:
+                if a.target[0] == 'a':
+                    i = 3 * a.target[1] + 1 # floor
+                    j = a.target[2] + 1
+
+                    result[i][j] = 2 # Occupied / Reserved
+            if a.state is not None:
+                if a.state[0] in ys and a.state[1] in xs:
+                    i = ys.index(a.state[0])
+                    j = xs.index(a.state[1])
+
+                    if result[i][j] != 2:
+                        result[i][j] = 1 # Pallet Located
+                    if a.test_time > 0:
+                        # 테스트중일 경우...
+                        # 0520 테스트가 맞쳐진 경우 값이 제 각각이긴 할 것이다.
+                        result[i][j] = 2 + a.test_time / self.map.tester_mean
+        del self.memoryA[-1]
+        self.memoryA.insert(0, result)
+
+        result, ys, xs = self.empty_obs('b')
+
+        # Pallet 분포
+        for pallet_idx in self.pallets:
+            a = self.pallets[pallet_idx]
+            if a.target is not None:
+                if a.target[0] == 'b':
                     i = 3 * a.target[1] + 1 # floor
                     j = a.target[2] + 1
 
@@ -367,13 +394,8 @@ class FloorEnv(Env):
                         # 0520 테스트가 맞쳐진 경우 값이 제 각각이긴 할 것이다.
                         result[i][j] = 2 + a.test_time / self.map.tester_mean
 
-        # window_size가 0인 경우 그냥 일단 제외하고 만들었다.
-        if tester_type == 'a':
-            del self.memoryA[-1]
-            self.memoryA.insert(0, result)
-        else:
-            del self.memoryB[-1]
-            self.memoryB.insert(0, result)
+        del self.memoryB[-1]
+        self.memoryB.insert(0, result)
     
     def check_plane(self, state = (1, 0)):
         result = np.zeros((len(self.map.map), len(self.map.map[0])))
