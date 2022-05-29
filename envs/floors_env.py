@@ -276,9 +276,12 @@ class FloorEnv(Env):
     def empty_obs(self, tester_type):
         ys = [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
         if tester_type == "a":
-            xs = [1,2,3,4,5,6,7]
+            # lift 왼쪽까지 보여주도록 하기 위해 xs에 각각 0, 7추가
+            # 이렇게 안할꺼면 lift에서 타고 나서 action 배정하도록 해야할 것..
+            # action 배정을 그때하는거보다는 이게 나을듯..?
+            xs = [0,1,2,3,4,5,6,7]
         else: # tester_type == "b":
-            xs = [8,9,10,11,12,13,14]
+            xs = [7,8,9,10,11,12,13,14]
 
         result = np.zeros((len(ys), len(xs)))
 
@@ -312,24 +315,33 @@ class FloorEnv(Env):
         return self.get_memory(tester_type)
 
     def get_memory(self, tester_type):
-        if tester_type == 'a':
-            memory = copy.deepcopy(self.memoryA)
-        else:
-            memory = copy.deepcopy(self.memoryB)
-        
-        # get_memory가 필요한 부분은 while문 바깥밖에 없다. 얘가 불릴 때 cursor는 action 지정이 필요한 pallet을 가리킨다.
-        # 이 pallet은 entrance에 있거나, 가운데 lift 바로 왼쪽에서 대기 중이다. Tester에 들어있는 경우가 절대 없다.
-        # 따라서 마음 놓고 해당 pallet이 위치한 부분의 값을 아무렇게나 지정해도 된다.
         a = self.pallets[self.cursor]
-        i = a.state[0]
-        # lift에 표시해야함.. 별 문제 없겠지? 만약 해당 칸에 다른 pallet이 있다면?? 문제가 될까?
-        # 안될거같다. 어차피 lift는 점유되면 못타는 것이기도 하고, 여기에 뭐가 있던간에 층수를 설정하는데 문제가 되는건 아닐거같다.. 물론 영향이 있을순 잇겠지만.. 일단 이렇게 하자.
-        j = 0
+        # action이 배정될 놈은 당연히 state가 존재할텐데 이걸 왜 확인하냐?라는 의문이 들 수 있다.
+        # 해보니까 simulation 종료됐을 때(self.done이 True로 바뀔 때), 마지막 pallet이 exit 처리 돼서 state가 None이 되는데, 여전히 cursor는 걔 가리킨다.
+        # 그래서 state가 None임에도 불구하고 이 함수가 호출되는 경우가 발생
+        # 어차피 episode종료되는 경우니까 중요한건 아니라서 걍 별다른거 없이 여기서 처리해주는게 낫다고 생각했다.
+        if a.state is not None:
+            if tester_type == 'a':
+                memory = copy.deepcopy(self.memoryA)
+            else:
+                memory = copy.deepcopy(self.memoryB)
+            
+            # get_memory가 필요한 부분은 while문 바깥밖에 없다. 얘가 불릴 때 cursor는 action 지정이 필요한 pallet을 가리킨다.
+            # 이 pallet은 entrance에 있거나, 가운데 lift 바로 왼쪽에서 대기 중이다. Tester에 들어있는 경우가 절대 없다.
+            # 따라서 마음 놓고 해당 pallet이 위치한 부분의 값을 아무렇게나 지정해도 된다.
+            
+            i = a.state[0]
+            # action이 배정되는 순간은 항상 lift 왼쪽, 즉 memory에서 가장 왼쪽에 있는 칸이다.
+            j = 0
+            memory[0][i][j] = 10
 
-        memory[0][i][j] = 10
-
-        # window size 0인 경우는 고려하지 않는다.
-        return np.array(memory).flatten()
+            # window size 0인 경우는 고려하지 않는다.
+            return np.array(memory).flatten()
+        else:
+            if tester_type == 'a':
+                return np.array(self.memoryA).flatten()
+            else:
+                return np.array(self.memoryB).flatten()
 
     def update_memory(self, tester_type):
         result, ys, xs = self.empty_obs(tester_type)
