@@ -216,7 +216,7 @@ class FloorEnv(Env):
                         # 입장이 돼서 state도 있고, done도 아닌데
                         # actions가 비어있다? 새로 tester에 배정되어야하는 상태인 것!
                         # 따라서 break!
-                        self.update_memory(a.tester_type())
+                        self.update_memory()
                         break
                         
                     elif len(a.actions) > 0:
@@ -231,7 +231,7 @@ class FloorEnv(Env):
                 # break하는 경우는 action이 필요한 경우
                 # action이 필요한 pallet 전에 마지막으로 움직인 pallet가 있을 것
                 # 여기에 update_memory를 배치함으로써 걔가 움직이고 난 직후 상황이 여기에 memory에 마지막에 저장되게 된다.
-                self.update_memory(a.tester_type())
+                self.update_memory()
 
                 if self.done_count == self.pallet_counts:
                     print("ALL DONE, SIMTIME:", self.sim_time)
@@ -312,7 +312,7 @@ class FloorEnv(Env):
         return r
 
     def obs(self, tester_type):
-        self.update_memory(tester_type)
+        self.update_memory()
         return self.get_memory(tester_type)
 
     def get_memory(self, tester_type):
