@@ -173,7 +173,7 @@ class FloorEnv(Env):
                 reward = -1
             else:
                 # print("RUN RL ACTION ID", a.id, a.state, a.target, a.test_count, self.done_count)
-                # a.move(a.actions[0])
+                a.move(a.actions[0])
                 
                 # Assign된 검사기의 수 리턴
                 reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
@@ -184,7 +184,7 @@ class FloorEnv(Env):
 
         # 대기 혹은 wrong assign 때 다른 pallet에 대해 simulate 진행
         # 어차피 다음 차례에 이 pallet로 돌아옴
-        # self.cursor += 1
+        self.cursor += 1
         
         count = 0
         while True:
