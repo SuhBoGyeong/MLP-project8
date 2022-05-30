@@ -35,7 +35,11 @@ def main(args):
     layers = parseLayersFromArgs(args=args) # default [32, 32]
     policy_kwargs = dict(layers=layers)
 
-    model = DQN.load(args.model_path)
+    print(args.model_path)
+    print(args.model_path_2)
+
+    model_1 = DQN.load(args.model_path)
+    model_2 = DQN.load(args.model_path_2)
 
     test_runs = 1
 
@@ -45,9 +49,12 @@ def main(args):
         print(i+1,"/",test_runs)
         while True:
             
-            action, _states = model.predict(obs)
+            if env.cursor_thread == 0:
+                action, _states = model_1.predict(obs)
+            elif env.cursor_thread == 1:
+                action, _states = model_2.predict(obs)
             # print(action)
-            obs, rewards, dones, info = env.step(action)
+            obs, rewards, dones, info = env.step(action, env.cursor_thread, i)
 
             if dones == True:
                 # env.render(show=True)
@@ -105,14 +112,18 @@ if __name__ == '__main__':
 
     answers = prompt(questions)
 
-    f = open(answers['target_model']+'/log.monitor.csv', 'r')
+    f = open(answers['target_model']+'/log/log.model0.csv', 'r')
     _args = json.loads(f.readline().replace('#',''))['args']
     _args['play'] = True
 
-    model_files = sorted(glob(answers['target_model'].replace('.monitor.csv','')+'/*_model.pkl'))
+    model_files = sorted(glob(answers['target_model'].replace('.monitor.csv','')+'/*_model0.pkl'))
     model_files.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
+
+    model_files_2 = sorted(glob(answers['target_model'].replace('.monitor.csv','')+'/*_model1.pkl'))
+    model_files_2.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
     
     _args['model_path'] = model_files[-1]
+    _args['model_path_2'] = model_files[-1]
 
     if args.prefix != "":
         _args['prefix'] = args.prefix
