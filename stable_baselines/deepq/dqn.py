@@ -323,14 +323,14 @@ class DQN(OffPolicyRLModel):
                 self.num_timesteps += 1
                 ######################
                 #print('timesteps: ', self.num_timesteps)
-                if model_id == 0:
-                    f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps1.txt', 'w')
-                    f.write(str(self.num_timesteps))
-                    f.close()
-                else:
-                    f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps2.txt', 'w')
-                    f.write(str(self.num_timesteps))
-                    f.close()
+                # if model_id == 0:
+                #     f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps1.txt', 'w')
+                #     f.write(str(self.num_timesteps))
+                #     f.close()
+                # else:
+                #     f = open('/home/gon/Desktop/git/Assigning-Problem/timesteps2.txt', 'w')
+                #     f.write(str(self.num_timesteps))
+                #     f.close()
                 ######################
 
                 # if model_id == 0:

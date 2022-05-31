@@ -80,8 +80,8 @@ class Map:
             }
         }
 
-        self.tester_mean = 5
-        self.tester_std = 1
+        self.tester_mean = 50
+        self.tester_std = 10
 
     def map_value(self, state):
         #print(state)

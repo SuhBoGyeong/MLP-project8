@@ -204,9 +204,9 @@ class FloorEnv(Env):
                 temp = None
             plane = self.check_plane(a.state)
             self.savePalletBuffer()
-            if cursor_thread == 0:
-                np.save(f'./everystep/memory0/binary/ts{timestep:03d}-itr{count:03d}-p{self.cursor}:s{a.state},t{temp}.npy', plane)
-                np.save(f'./everystep/memory0/pallets/ts{timestep:03d}-itr{count:03d}.npy', self.pallet_buffer)
+            # if cursor_thread == 0:
+            #     np.save(f'./everystep/memory0/binary/ts{timestep:03d}-itr{count:03d}-p{self.cursor}:s{a.state},t{temp}.npy', plane)
+            #     np.save(f'./everystep/memory0/pallets/ts{timestep:03d}-itr{count:03d}.npy', self.pallet_buffer)
             ##############
 
             # 입장이 됨
