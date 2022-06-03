@@ -158,6 +158,7 @@ class FloorEnv(Env):
         '''
         # print("IN STEP:", cursor_thread, id(self))
         a = self.pallets[self.cursor]
+        
 
         if action == 5:
             # 대기
@@ -173,10 +174,28 @@ class FloorEnv(Env):
                 reward = -1
             else:
                 # print("RUN RL ACTION ID", a.id, a.state, a.target, a.test_count, self.done_count)
-                # a.move(a.actions[0])
+                a.move(a.actions[0])
                 
                 # Assign된 검사기의 수 리턴
-                reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
+                ################### ORIGIANL REWARD
+                #reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25
+
+                current_plane = self.get_memory(tester_type=a.tester_type()).reshape((4,14,8))[0]
+                #print(current_plane.shape)
+                crowdness = []
+                for n_floor in range(5):
+                    # print(current_plane[n_floor*3,:])
+                    # print(current_plane[n_floor*3+1,:])
+                    crowdness.append(np.sum(current_plane[n_floor*3,:]>2) + np.sum(current_plane[n_floor*3+1,:]>2))
+                print(crowdness)
+                u, inv, counts = np.unique(crowdness, return_inverse=True, return_counts=True)
+                csum = np.zeros_like(counts)
+                csum[1:] = counts[:-1].cumsum()
+                crowdness_rank = csum[inv]
+                #print(crowdness_rank)
+                crowdness_rank_chosen = crowdness_rank[a.target[1]-1]
+                reward = float((1 - crowdness_rank_chosen/max(crowdness_rank)) * 2)
+
 
         if self.cursor == self.pallet_counts -1:
             # 한바퀴를 다 수행하였을 때만 현화면 저장
@@ -184,7 +203,7 @@ class FloorEnv(Env):
 
         # 대기 혹은 wrong assign 때 다른 pallet에 대해 simulate 진행
         # 어차피 다음 차례에 이 pallet로 돌아옴
-        # self.cursor += 1
+        self.cursor += 1
         
         count = 0
         while True:
@@ -243,11 +262,11 @@ class FloorEnv(Env):
                 # 한바퀴를 다 수행하였을 때만 현화면 저장
                 self.saveBuffer(self.title)
 
-        obs = self.get_memory(tester_type=a.tester_type()) # 현상태의 state           
+        obs = self.get_memory(tester_type=a.tester_type()) # 현상태의 state         
 
         if self.done_count == self.pallet_counts:
             self.done = True
-
+        print(self.done_count, '/', self.pallet_counts)
         log_dir = logDir()+self.args.prefix+"/log"
         os.makedirs(log_dir, exist_ok=True)
         csv_path = (log_dir+'/log.model{}.csv').format(cursor_thread)
@@ -335,6 +354,7 @@ class FloorEnv(Env):
             # action이 배정되는 순간은 항상 lift 왼쪽, 즉 memory에서 가장 왼쪽에 있는 칸이다.
             j = 0
             memory[0][i][j] = 10
+
 
             # window size 0인 경우는 고려하지 않는다.
             return np.array(memory).flatten()
