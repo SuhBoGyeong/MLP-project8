@@ -171,6 +171,7 @@ class FloorEnv(Env):
                 # 해당 검사기가 꽉참. Penalize!
                 # print("FULL", a.id)
                 # pallet에 action 지정 자체가 안되게 됨. 얘는 그럼 enter도 안되고 걍 있는것임.
+                #reward = -1  ### original value
                 reward = -1
             else:
                 # print("RUN RL ACTION ID", a.id, a.state, a.target, a.test_count, self.done_count)
@@ -186,7 +187,8 @@ class FloorEnv(Env):
                 for n_floor in range(5):
                     # print(current_plane[n_floor*3,:])
                     # print(current_plane[n_floor*3+1,:])
-                    crowdness.append(np.sum(current_plane[n_floor*3,:]>2) + np.sum(current_plane[n_floor*3+1,:]>2))
+                    #crowdness.append(np.sum(current_plane[n_floor*3,:]>2) + np.sum(current_plane[n_floor*3+1,:]>2))
+                    crowdness.append(0.8 * np.sum(current_plane[n_floor*3,:]>2) + 0.2 * np.sum(current_plane[n_floor*3+1,:]>2))
                 print(crowdness)
                 u, inv, counts = np.unique(crowdness, return_inverse=True, return_counts=True)
                 csum = np.zeros_like(counts)
@@ -194,7 +196,8 @@ class FloorEnv(Env):
                 crowdness_rank = csum[inv]
                 #print(crowdness_rank)
                 crowdness_rank_chosen = crowdness_rank[a.target[1]-1]
-                reward = float((1 - crowdness_rank_chosen/max(crowdness_rank)) * 2)
+                #reward = float((1 - crowdness_rank_chosen/max(crowdness_rank)) * 2)
+                reward = np.count_nonzero(self.get_memory(tester_type=a.tester_type()) == 2) / 25 + float((1 - crowdness_rank_chosen/max(crowdness_rank)))
 
 
         if self.cursor == self.pallet_counts -1:
