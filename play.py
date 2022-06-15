@@ -123,7 +123,7 @@ if __name__ == '__main__':
     model_files_2.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
     
     _args['model_path'] = model_files[-1]
-    _args['model_path_2'] = model_files[-1]
+    _args['model_path_2'] = model_files_2[-1]
 
     if args.prefix != "":
         _args['prefix'] = args.prefix

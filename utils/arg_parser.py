@@ -28,7 +28,7 @@ def common_arg_parser():
     parser.add_argument('--layer_size', help='plot', default=2, type=int)
 
     parser.add_argument('--window_size', help='Window Size', default=4, type=int)
-    parser.add_argument('--pallet_counts', help='Agent Count', default=5, type=int)
+    parser.add_argument('--pallet_counts', help='Agent Count', default=200, type=int)
 
     return parser
 
