@@ -10,6 +10,7 @@ class Map:
     4 : Line
     5 : Exit
     0 : Invalid
+    It gives information, current states of the map
     '''
     def __init__(self):
         # INVD, self.invalid_flag = 0, 0

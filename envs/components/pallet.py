@@ -1,6 +1,10 @@
 import numpy as np
 
 class Pallet:
+    '''
+    Every variable that represents the states of a pallet is implemented
+    How a pallet goes to the tester that it is assigned to is implemented
+    '''
     def __init__(self, map, id, enter, env):
         # Start Point
         if enter == False:
@@ -109,6 +113,10 @@ class Pallet:
         return self.state
 
     def setTarget(self, tester_type, floor):
+        '''
+        If the floor that a pallet is assigned to, return False
+        If not, return the path from the current location of the pallet to the designated tester
+        '''
         
         # 해당 층에 몇개의 테스터기가 점유되어 있는가
         counts = self.map.tester_status(tester_type)[floor]
