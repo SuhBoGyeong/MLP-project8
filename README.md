@@ -1,6 +1,8 @@
 # Machine Leraning and Programming - Project 8
 ## Bogyeong Suh, Geon Kim, Sri Madhumitha Nelakanti, Tuli Barman
 
+<img src="https://user-images.githubusercontent.com/73596975/174717850-938bf0c6-c254-432c-97f8-259a4099a2b0.png" width=430 height=353)>
+
 ### Description
 In this repository, we provide the codes for project 8 'Control Logic Synthesis for Manufcaturing System Using Deep Reinforcement Learning'. 
 The following codes have two steps:
